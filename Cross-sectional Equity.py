@@ -132,7 +132,7 @@ def make_pipeline():
         quality_winsorized.zscore() * 0.8 + 
         sentiment_score_winsorized.zscore() * 0.5 +
         growth_score_winsorized  * 0.8 +
-        #gross_profit_winsorized * 0.3 +
+        gross_profit_winsorized * 0.3 +  #rth
         eps_growth_winsorized * 0.8
         
     )
