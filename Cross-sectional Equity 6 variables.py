@@ -1,4 +1,5 @@
 """
+Cross-sectional Equity 6 variables
 This algorithm demonstrates the concept of long-short equity. It uses a
 combination of factors to construct a ranking of securities in a liquid
 tradable universe. It then goes long on the highest-ranked securities and short
