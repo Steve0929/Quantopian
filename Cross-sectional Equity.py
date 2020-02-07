@@ -23,6 +23,7 @@ from quantopian.pipeline.experimental import risk_loading_pipeline
 
 from quantopian.pipeline.data.psychsignal import stocktwits
 from quantopian.pipeline.data import Fundamentals
+from quantopian.pipeline.data.factset.estimates import ConsensusRecommendations
 
 # Constraint Parameters
 MAX_GROSS_LEVERAGE = 1.05 #1.0 #1.1
@@ -65,9 +66,10 @@ def initialize(context):
 
     # Schedule our rebalance function
     algo.schedule_function(func=rebalance,
-                           date_rule=algo.date_rules.week_start(),
+                           #date_rule=algo.date_rules.week_start(),
+                           date_rule=date_rules.every_day(),  
                            time_rule=algo.time_rules.market_open(hours=1, minutes=30),
-                           half_days=False)
+                           half_days=True)
 
     # Record our portfolio variables at the end of day
     algo.schedule_function(func=record_vars,
@@ -98,22 +100,41 @@ def make_pipeline():
         inputs=[stocktwits.bull_minus_bear],
         window_length= 21,
     )
-
+    
+    
+    growth_score = Fundamentals.growth_score.latest
+    #print(value)
+    gross_profit = Fundamentals.gross_profit.latest
+    equity_per_share_growth = Fundamentals.equity_per_share_growth.latest
+      
+    #dps_growth = Fundamentals.dps_growth.latest
     universe = QTradableStocksUS()
     
     # We winsorize our factor values in order to lessen the impact of outliers
     # For more information on winsorization, please see
     # https://en.wikipedia.org/wiki/Winsorizing
     # 0.05 - 0.95
+    #dps_growth_winsorized = dps_growth.winsorize(min_percentile=0.05, max_percentile=0.95)
+    
+    eps_growth_winsorized = equity_per_share_growth.winsorize(min_percentile=0.05, max_percentile=0.95)
+    
+    gross_profit_winsorized = gross_profit.winsorize(min_percentile=0.05, max_percentile=0.95)
+    
     value_winsorized = value.winsorize(min_percentile=0.05, max_percentile=0.95)
     quality_winsorized = quality.winsorize(min_percentile=0.05, max_percentile=0.95)
     sentiment_score_winsorized = sentiment_score.winsorize(min_percentile=0.05,                                                                             max_percentile=0.95)
+    
+    growth_score_winsorized = growth_score.winsorize(min_percentile=0.05,                                                                       max_percentile=0.95)
 
     # Here we combine our winsorized factors, z-scoring them to equalize their influence
     combined_factor = (
         value_winsorized.zscore() + 
-        quality_winsorized.zscore() + 
-        sentiment_score_winsorized.zscore() * 0.5
+        quality_winsorized.zscore() * 0.8 + 
+        sentiment_score_winsorized.zscore() * 0.5 +
+        growth_score_winsorized  * 0.8 +
+        #gross_profit_winsorized * 0.3 +
+        eps_growth_winsorized * 0.8
+        
     )
 
     # Build Filters representing the top and bottom baskets of stocks by our
